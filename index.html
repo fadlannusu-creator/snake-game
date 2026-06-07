@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>🐍 Snake Game Android</title>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    background:#1a1a1a;
+    color:white;
+    font-family:Arial,sans-serif;
+    text-align:center;
+    padding:10px;
+}
+
+h1{
+    color:#00ff66;
+    margin-bottom:10px;
+}
+
+.info{
+    display:flex;
+    justify-content:center;
+    gap:20px;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+    font-size:20px;
+}
+
+.speed-box{
+    margin:10px auto;
+    max-width:300px;
+}
+
+.speed-box input{
+    width:100%;
+}
+
+canvas{
+    background:#111;
+    border:4px solid #00ff66;
+    border-radius:12px;
+    width:95vw;
+    max-width:420px;
+    height:auto;
+}
+
+.controls{
+    margin-top:15px;
+}
+
+.btn{
+    width:75px;
+    height:75px;
+    border:none;
+    border-radius:15px;
+    font-size:30px;
+    margin:5px;
+    cursor:pointer;
+    background:#00cc55;
+    color:white;
+}
+
+.restart{
+    margin-top:15px;
+    width:180px;
+    height:50px;
+    border:none;
+    border-radius:10px;
+    font-size:18px;
+    background:#ff9800;
+    color:white;
+    cursor:pointer;
+}
+
+.gameover{
+    color:red;
+    font-size:24px;
+    margin-top:10px;
+    font-weight:bold;
+}
+
+#speedValue{
+    color:#00ff66;
+    font-weight:bold;
+}
+</style>
+</head>
+<body>
+
+<h1>🐍 Ular Makan Buah</h1>
+
+<div class="info">
+    
+    <div>
+        Skor:
+        <span id="score">0</span>
+    </div>
+
+    <div>
+        High Score:
+        <span id="highscore">0</span>
+    </div>
+</div>
+
+<div class="speed-box">
+
+    <p>
+        Kecepatan:
+        <span id="speedValue">
+            🚶 Normal
+        </span>
+    </p>
+
+    <input
+        type="range"
+        id="speedSlider"
+        min="50"
+        max="250"
+        value="120">
+
+</div>
+
+<canvas
+id="game"
+width="420"
+height="420">
+</canvas>
+
+<div
+id="gameover"
+class="gameover">
+</div>
+
+<div class="controls">
+
+    <div>
+        <button
+        class="btn"
+        onclick="changeDirection('UP')">
+        ⬆️
+        </button>
+    </div>
+
+    <div>
+        <button
+        class="btn"
+        onclick="changeDirection('LEFT')">
+        ⬅️
+        </button>
+
+        <button
+        class="btn"
+        onclick="changeDirection('DOWN')">
+        ⬇️
+        </button>
+
+        <button
+        class="btn"
+        onclick="changeDirection('RIGHT')">
+        ➡️
+        </button>
+    </div>
+
+</div>
+
+<button
+class="restart"
+onclick="restartGame()">
+🔄 Mulai Ulang
+</button>
+
+<script>
+
+const canvas =
+document.getElementById("game");
+
+const ctx =
+canvas.getContext("2d");
+
+const box = 21;
+const canvasSize = 420;
+
+let score = 0;
+let gameRunning = true;
+
+let highScore =
+localStorage.getItem(
+"snakeHighScore"
+) || 0;
+
+document.getElementById(
+"highscore"
+).innerText = highScore;
+
+let snake = [
+{
+x:210,
+y:210
+}
+];
+
+let direction = "RIGHT";
+
+function randomFood(){
+
+    return{
+
+        x:
+        Math.floor(
+        Math.random()*20
+        ) * box,
+
+        y:
+        Math.floor(
+        Math.random()*20
+        ) * box
+    };
+}
+
+let food = randomFood();
+let flash = 0;
+let level = 1;
+let particles = [];
+let tongueAnimation = 0;
+
+function changeDirection(dir){
+
+    if(dir=="LEFT" &&
+       direction!="RIGHT")
+       direction="LEFT";
+
+    if(dir=="RIGHT" &&
+       direction!="LEFT")
+       direction="RIGHT";
+
+    if(dir=="UP" &&
+       direction!="DOWN")
+       direction="UP";
+
+    if(dir=="DOWN" &&
+       direction!="UP")
+       direction="DOWN";
+}
+
+document.addEventListener(
+"keydown",
+function(e){
+
+if(e.key=="ArrowLeft" ||
+   e.key=="a")
+   changeDirection("LEFT");
+
+if(e.key=="ArrowRight" ||
+   e.key=="d")
+   changeDirection("RIGHT");
+
+if(e.key=="ArrowUp" ||
+   e.key=="w")
+   changeDirection("UP");
+
+if(e.key=="ArrowDown" ||
+   e.key=="s")
+   changeDirection("DOWN");
+
+});
+
+function draw(){
+
+if(!gameRunning) return;
+
+ctx.fillStyle="#111";
+ctx.fillRect(
+0,
+0,
+canvasSize,
+canvasSize
+);
+
+ctx.fillStyle="red";
+
+ctx.beginPath();
+ctx.arc(
+food.x+10,
+food.y+10,
+9,
+0,
+Math.PI*2
+);
+ctx.fill();
+
+for(
+let i=0;
+i<snake.length;
+i++
+){
+
+ctx.fillStyle =
+i==0
+? "#00ff66"
+: "#00aa44";
+
+ctx.fillRect(
+snake[i].x,
+snake[i].y,
+box,
+box
+);
+
+}
+
+let headX =
+snake[0].x;
+
+let headY =
+snake[0].y;
+
+if(direction=="LEFT")
+headX -= box;
+
+if(direction=="RIGHT")
+headX += box;
+
+if(direction=="UP")
+headY -= box;
+
+if(direction=="DOWN")
+headY += box;
+
+/* TEMBUS DINDING */
+
+if(headX < 0)
+headX = canvasSize-box;
+
+if(headX >= canvasSize)
+headX = 0;
+
+if(headY < 0)
+headY = canvasSize-box;
+
+if(headY >= canvasSize)
+headY = 0;
+
+if(
+headX==food.x &&
+headY==food.y
+){
+
+score++;
+
+document.getElementById(
+"score"
+).innerText = score;
+
+if(score > highScore){
+
+highScore = score;
+
+localStorage.setItem(
+"snakeHighScore",
+highScore
+);
+
+document.getElementById(
+"highscore"
+).innerText =
+highScore;
+}
+
+food = randomFood();
+
+}else{
+
+snake.pop();
+
+}
+
+let newHead = {
+
+x:headX,
+y:headY
+
+};
+
+for(
+let i=0;
+i<snake.length;
+i++
+){
+
+if(
+snake[i].x==
+newHead.x &&
+snake[i].y==
+newHead.y
+){
+
+gameRunning = false;
+
+document.getElementById(
+"gameover"
+).innerHTML =
+"💀 GAME OVER<br>Skor: "
++ score;
+
+return;
+
+}
+
+}
+
+snake.unshift(
+newHead
+);
+
+}
+
+/* KECEPATAN */
+
+let gameSpeed = 120;
+
+const slider =
+document.getElementById(
+"speedSlider"
+);
+
+let savedSpeed =
+localStorage.getItem(
+"snakeSpeed"
+);
+
+if(savedSpeed){
+
+slider.value =
+savedSpeed;
+
+gameSpeed =
+parseInt(savedSpeed);
+
+updateSpeedText(
+gameSpeed
+);
+
+}
+
+let gameLoop =
+setInterval(
+draw,
+gameSpeed
+);
+
+slider.addEventListener(
+"input",
+function(){
+
+gameSpeed =
+parseInt(
+this.value
+);
+
+localStorage.setItem(
+"snakeSpeed",
+gameSpeed
+);
+
+clearInterval(
+gameLoop
+);
+
+gameLoop =
+setInterval(
+draw,
+gameSpeed
+);
+
+updateSpeedText(
+gameSpeed
+);
+
+});
+
+function updateSpeedText(
+speed
+){
+
+let text =
+"🚶 Normal";
+
+if(speed > 180)
+text =
+"🐢 Lambat";
+
+else if(speed > 100)
+text =
+"🚶 Normal";
+
+else if(speed > 70)
+text =
+"🚀 Cepat";
+
+else
+text =
+"⚡ Sangat Cepat";
+
+document.getElementById(
+"speedValue"
+).innerText =
+text;
+
+}
+
+/* RESTART */
+
+function restartGame(){
+
+score = 0;
+
+document.getElementById(
+"score"
+).innerText = 0;
+
+document.getElementById(
+"gameover"
+).innerHTML = "";
+
+snake = [
+{
+x:210,
+y:210
+}
+];
+
+direction = "RIGHT";
+
+food =
+randomFood();
+
+gameRunning = true;
+
+}
+
+/* SWIPE ANDROID */
+
+let startX;
+let startY;
+
+canvas.addEventListener(
+"touchstart",
+function(e){
+
+startX =
+e.touches[0]
+.clientX;
+
+startY =
+e.touches[0]
+.clientY;
+
+});
+
+canvas.addEventListener(
+"touchend",
+function(e){
+
+let endX =
+e.changedTouches[0]
+.clientX;
+
+let endY =
+e.changedTouches[0]
+.clientY;
+
+let dx =
+endX-startX;
+
+let dy =
+endY-startY;
+
+if(
+Math.abs(dx) >
+Math.abs(dy)
+){
+
+if(dx>0)
+changeDirection(
+"RIGHT"
+);
+
+else
+changeDirection(
+"LEFT"
+);
+
+}else{
+
+if(dy>0)
+changeDirection(
+"DOWN"
+);
+
+else
+changeDirection(
+"UP"
+);
+
+}
+
+});
+
+</script>
+
+</body>
+</html>
